@@ -1,0 +1,43 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: rankings.html
+# Author: Conrad Damon
+# Date: 04/04/2017
+#
+# Current DDC rankings.
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('ddc.php');
+
+$pageTitle = "Double Disc Court: Rankings";
+
+echo <<< EOF
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/ddc/common.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/ddc/ddc.js"></script>
+<script src="/js/ddc/rankings.js"></script>
+<script>
+function launch() {
+  initializeRankings();
+}
+</script>
+<title>$pageTitle</title>
+</head>
+<body onload="launch();">
+  <div class="title">$pageTitle</div>
+  <div id="content"></div>
+</body>
+</html>
+EOF;
+?>

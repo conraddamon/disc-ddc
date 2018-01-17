@@ -1,0 +1,58 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: player.html
+# Author: Conrad Damon
+# Date: 03/16/2017
+#
+# Show stats and results for a single DDC player.
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('overall.php');
+require_once('ddc.php');
+
+$id = get_input('id', 'get');
+
+$sql = "SELECT name FROM player WHERE id=$id";
+$person = db_query($sql, 'one');
+show_var($person, "person", LOG_INFO);
+$name = $person['name'];
+$pageTitle = "Double Disc Court: " . $name;
+
+
+echo <<< EOF
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/ddc.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/ddc/common.js"></script>
+<script src="/js/ddc/player.js"></script>
+<script>
+function launch() {
+  initializePlayer($id);
+}
+</script>
+
+<title>$pageTitle</title>
+</head>
+<body onload="launch();">
+  <div class="header subtitle">$name</div>
+  <div class="pageLinks">
+    [ <span class="pageLink" id="results">Results</span> ]
+    [ <span class="pageLink" id="stats">Stats</span> ]
+    [ <span class="pageLink" id="rankingGraph">Ranking graph</span> ]
+    [ <span class="pageLink" id="rankings">Rankings</span> ]
+  </div>
+  <div id="content"></div>
+</body>
+</html>
+EOF;
+?>

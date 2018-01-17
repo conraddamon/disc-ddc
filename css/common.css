@@ -1,0 +1,38 @@
+.tournament {
+  white-space: nowrap
+}
+
+textarea {
+  width: 20rem;
+}
+
+.year {
+  margin-left: 2rem;
+}
+
+.description {
+  margin-top: 2rem;
+}
+
+#rankings a {
+  text-decoration: none;
+}
+
+.ddcHeader {
+  padding-bottom: 1rem;
+}
+
+.ddcHeader, .ddcCell {
+  text-align: left;
+  padding-left: 5rem;
+}
+
+.resultsTable a, .stats a {
+  color: #666;
+  text-decoration: none;
+}
+
+.mainStat {
+  text-align: center;
+  font-size: 1.3rem;
+}

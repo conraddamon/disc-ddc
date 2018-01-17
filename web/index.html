@@ -1,0 +1,48 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: index.html
+# Author: Conrad Damon
+# Date: 03/15/2017
+#
+# Home page for all DDC tournament results.
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('ddc.php');
+
+$pageTitle = "Double Disc Court: Tournament Results";
+
+echo <<< EOF
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/ddc/common.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/ddc/index.js"></script>
+<script>
+function launch() {
+  initializeIndex();
+}
+</script>
+<title>$pageTitle</title>
+</head>
+<body onload="launch();">
+  <div class="title">$pageTitle</div>
+  <div class="pageLinks">
+    [ <span class="pageLink" id="byYear">By year</span> ]
+    [ <span class="pageLink" id="byName">By name</span> ]
+    [ <span class="pageLink" id="rankings">Rankings</span> ]
+    [ <span class="pageLink" id="champions">Champions</span> ]
+  </div>
+  <div id="content"></div>
+</body>
+</html>
+EOF;
+?>

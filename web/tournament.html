@@ -1,0 +1,81 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: tournament.html
+# Author: Conrad Damon
+# Date: 03/15/2017
+#
+# Displays the results of a DDC tournament
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('ddc.php');
+
+$id = get_input('id', 'get');
+
+$sql = "SELECT * FROM tournament WHERE id=$id";
+$tournament = db_query($sql, 'one');
+$pageTitle = getTournamentTitle($tournament);
+$header = getTournamentHeader($tournament);
+$level = "<div class='description'>Tournament level: " . $tournament['level'] . "</div>";
+$text = '';
+$description = $tournament['description'];
+if ($description) {
+   $text = "<div class='description'>";
+   $text .= !hasHtml($description) ? "<pre>" . $description . "</pre>" : $description;
+   $text .= "</div>";
+}
+
+$sql = "SELECT r.*, p1.name AS name1, p2.name AS name2 FROM result r JOIN player p1 ON (p1.id=r.player1) LEFT JOIN player p2 ON (p2.id=r.player2) WHERE tournament_id=$id";
+$results = db_query($sql);
+usort($results, 'by_division');
+$teamLabel = 'Player';
+$resultHtml = '';
+$curDiv = '';
+foreach ($results as $result) {
+   $div = $result['division'];
+   if ($div != $curDiv) {
+      $teamLabel = hasTeam($results, $div) ? 'Team' : 'Player';
+      if ($curDiv) {
+         $resultHtml .= "</ul>";
+      }
+      $curDiv = $div;
+      $resultHtml .= <<< EOF
+<div class='header'>$DIV_NAME[$div]</div>
+<ul class="form">
+  <li>
+    <div class="dataCell dataHeader">Place</div>
+    <div class="dataCell dataHeader">$teamLabel</div>
+  </li>
+EOF;
+   }
+
+   $team = getTeamName(array($result['name1'], $result['name2']));
+   $resultHtml .= "<li><div class='dataCell'>" . $result['place'] . "</div><div class='dataCell'>" . $team . "</div></li>\n";
+}
+$resultHtml .= "</ul>";
+
+echo <<< EOF
+<!doctype html>
+<html>
+<head>
+<link rel="stylesheet" href="/css/common.css">
+<title>$pageTitle</title>
+</head>
+<body>
+  $header
+</body>
+$resultHtml
+$level
+$text
+</html>
+EOF;
+
+function hasTeam($results, $division) {
+
+   $teams = array_filter($results, function($result) use($division) { return ($result['division'] == $division && $result['player2'] != 0); });
+   return count($teams) != 0;
+}
+
+?>

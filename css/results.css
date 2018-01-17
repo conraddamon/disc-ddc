@@ -1,0 +1,65 @@
+label {
+  vertical-align: top;
+}
+
+#resultsHeader {
+  display: none;
+}
+
+#levels {
+  margin-left: 5rem;
+}
+
+#tournamentContainer, #playerContainer {
+  margin-bottom: 2rem;
+}
+
+#start, #end {
+  width: 7rem;
+}
+
+input[type="text"] {
+  margin-right: 2rem;
+}
+
+.resultRow {
+  margin-bottom: 2rem;
+}
+
+input.player {
+  width: 12rem;
+}
+
+#place {
+  width: 2rem;
+}
+
+.divCol {
+  width: 3rem;
+}
+
+.placeCol {
+  width: 3rem;
+}
+
+.teamCol {
+  width: 25rem;
+}
+
+.deleteCol {
+  width: 2rem;
+}
+
+.imgTrash {
+  width: 20px;
+  height: 16px;
+  background: url("/images/trash.gif");
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+button {
+  margin-top: 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+}

@@ -1,0 +1,106 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="../../../css/common.css">
+<link rel="stylesheet" href="../../../css/ddc/common.css">
+<link rel="stylesheet" href="../../../css/ddc/results.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="../../../js/common.js"></script>
+<script src="../../../js/ddc/ddc.js"></script>
+<script src="../../../js/ddc/results.js"></script>
+<script>
+function launch() {
+    initializeResults();
+}
+</script>
+<title class="title">DDC Tournament Results</title>
+</head>
+<body onload="launch()">
+<h2 class="title">DDC Tournament Results</h2>
+<form id="form1" method="post" action="">
+  <div class="header">Tournament Information</div>
+  <ul class="form">
+    <li>
+      <div><label for="name">*Name:</label></div>
+      <div><input name="name" type="text" id="name" tabIndex=0 /></div>
+      <div class="note">It is not necessary to include the year.</div>
+    </li>
+    <li>
+      <div><label for="location">*Location:</label></div>
+      <div><input name="location" type="text" id="location" tabIndex=0 /></div>
+    </li>
+    <li>
+      <div>*Format:</div>
+      <div><input name="format" type="radio" id="pairs" value="pairs" checked="checked" tabIndex=0 /><label for="pairs">Pairs</label>
+	   <input name="format" type="radio" id="koc" value="koc" tabIndex=0 /><label for="koc">Solo</label></div>
+    </li>
+    <li>
+      <div>*Level:</div>
+      <div>
+	<input name="level" type="radio" id="levelA" value="A" checked="checked" tabIndex=0 /><label for="levelA">A</label>
+	<input name="level" type="radio" id="levelB" value="B" tabIndex=0 /><label for="levelA">B</label>
+	<input name="level" type="radio" id="levelC" value="C" tabIndex=0 /><label for="levelA">C</label>
+	<input name="level" type="radio" id="levelD" value="D" tabIndex=0 /><label for="levelA">D</label>
+      </div>
+      <div class="note">A = Minor; B = Normal; C = Major; D = WFDF/US Open</div>
+    </li>
+    <li>
+      <div>Tags:</div>
+      <div>
+	<input name="tags" type="checkbox" id="tagKoc" value="koc" tabIndex=0 /><label for="tagKoc">KOC</label>
+	<input name="tags" type="checkbox" id="tagSweden" value="sweden" tabIndex=0 /><label for="tagSweden">Sweden</label>
+	<input name="tags" type="checkbox" id="tagIncomplete" value="incomplete" tabIndex=0 /><label for="tagIncomplete">Incomplete</label>
+      </div>
+      <div class="note">KOC = King of the Court; Sweden = in Sweden; Incomplete = some results missing</div>
+    </li>
+    <li>
+      <div><label for="start">*Start Date:</label></div>
+      <div><input name="start" type="text" id="start" tabIndex=0 /></div>
+    </li>
+    <li>
+      <div><label for="end">*End Date:</label></div>
+      <div><input name="end" type="text" id="end" tabIndex=0 /></div>
+    </li>
+    <li>
+      <div><label for="note" class="textLabel">Note:</label></div>
+      <div><textarea rows="3" id="note" name="note" tabIndex=0></textarea></div>
+      <div class="note">Notes or a summary of the tournament</div>
+    </li>
+  </ul>
+
+  <div class="header">Results for <span id="resultsDivision">Open</span></div>
+    <ul>
+      <li>Enter player names and team place below. Hit Return after typing the place to add to the results.</li>
+      <li>To make a change, delete the result and re-enter it.</li>
+      <li>When everything looks right, click the "Post Results" button to submit the results.</li>
+    </ul>
+    <div class="resultRow">
+      <label for="divisionSelect">Division:</label>
+      <select name="divisionSelect" id="divisionSelect" tabindex=0 >
+	<option value='O'>Open</option>
+	<option value='W'>Women</option>
+	<option value='OJ'>Open Junior</option>
+	<option value='WJ'>Women Junior</option>
+      </select>
+    </div>
+    <div class="resultRow">
+      <label for="player1">Player 1: </label><input type="text" name="player1" id="player1" class="player" tabIndex=0 />
+      <label for="player1">Player 2: </label><input type="text" name="player2" id="player2" class="player" tabIndex=0 />
+      <label for="place">Place: </label><input type="text" name="place" id="place" value="1" tabIndex=0 />
+    </div>
+
+  <div id="resultsHeader">
+    <div class="dataHeader divCol" id="headerDivision">Div</div>
+    <div class="dataHeader placeCol" id="headerPlace">Place</div>
+    <div class="dataHeader teamCol" id="headerTeam">Team</div>
+    <div class="dataHeader deleteCol">Delete</div>
+  </div>
+  
+  <div id="resultData"></div>
+
+<button id="submitButton" type="submit" tabIndex=0>Post Results</button>
+
+</form>
+</body>
+</html>
