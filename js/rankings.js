@@ -19,15 +19,15 @@ function gotResults(tournaments, date, results) {
 	    data = JSON.parse(data);
 	    let names = {};
 	    data.forEach(p => names[p.id] = p.name);
-	    rankings = getRankings(date, points, names, tournaments);
-	    showRankings(rankings);
+	    rankings = getRankings(date, points, tournaments);
+	    showRankings(rankings, names);
 	});
     
 
 
 }
 
-function showRankings(rankings) {
+function showRankings(rankings, names) {
 
     let divs = Object.keys(rankings),
 	html = '';
@@ -38,15 +38,15 @@ function showRankings(rankings) {
             players.sort((a, b) => rankings[div][b] - rankings[div][a]);
 	    html += '<ol>';
             players.forEach(function(p, idx) {
-                    let scores = points[div][p];
-                    scores.sort((a, b) => b - a);
-		    html += '<li>' + names[p] + ': ' + rankings[div][p].toFixed(2);
-                    html += ' <span style="opacity:0.5;">' + scores.length + ' scores: ' + scores.map(s => s.toFixed(2)).join(',') + '</span></li>';
+                    let score = rankings[div][p];
+		    //                    scores.sort((a, b) => b - a);
+		    html += '<li>' + names[p] + ': ' + score.toFixed(2);
+		    //                    html += ' <span style="opacity:0.5;">' + scores.length + ' scores: ' + scores.map(s => s.toFixed(2)).join(',') + '</span></li>';
 		});
 	    html += '</ol>';
 	});
 
-    $('#content').html(html.join(''));
+    $('#content').html(html);
 }
 
 

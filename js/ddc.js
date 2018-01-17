@@ -59,7 +59,7 @@ function getFixedPoints(results, tournaments) {
     return points;
 }
 
-function getRankings(date, points, names, tournaments) {
+function getRankings(date, points, tournaments) {
 
     let year = Number((date.split('-'))[0]),
 	rankingPoints = {};
@@ -80,8 +80,8 @@ function getRankings(date, points, names, tournaments) {
 		});
 	});
 
-    let divs = Object.keys(points).sort((a, b) => DIV_ORDER.indexOf(a) - DIV_ORDER.indexOf(b)),
-	ranking;
+    let divs = Object.keys(rankingPoints).sort((a, b) => DIV_ORDER.indexOf(a) - DIV_ORDER.indexOf(b)),
+	ranking = {};
 
     divs.forEach(function(div) {
             ranking[div] = ranking[div] || {};
@@ -89,7 +89,7 @@ function getRankings(date, points, names, tournaments) {
             players.forEach(function(p) {
                     let scores = rankingPoints[div][p];
                     scores.sort((a, b) => b - a);
-                    ranking[div][p] = scores.slice(0, NUM_SCORES.reduce((a, b) => a + b));
+                    ranking[div][p] = scores.slice(0, NUM_SCORES).reduce((a, b) => a + b);
 		});
 	});
 
