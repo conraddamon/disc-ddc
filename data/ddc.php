@@ -109,5 +109,16 @@ elseif ($op == 'add-result') {
   $result = db_query($sql);
 }
 
+elseif ($op == 'get-rankings') {
+  $year = get_input('year', 'get');
+  if ($year) {
+    $sql = "SELECT player_id, division, points FROM ranking WHERE date='$year-12-31'";
+  }
+  else {
+    $sql = "SELECT player_id, division, points FROM ranking WHERE date =(SELECT MAX(date) FROM ranking)";
+  }
+  $result = db_query($sql);
+}
+
 echo json_encode($result);
 ?>

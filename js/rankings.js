@@ -1,30 +1,23 @@
 function initializeRankings() {
 
     let qs = parseQueryString(),
-	date = qs.date || toMysqlDate(new Date());
-    
-    sendRequest('load-tournament', { before: date }).then(function(data) {
+	year = qs.year;
+
+    sendRequest('get-rankings', { year: year }).then(function(data) {
 	    data = JSON.parse(data);
-	    let tournaments = {};
-	    data.forEach(t => tournaments[t.id] = t);
-	    sendRequest('get-results', { before: date }, gotResults.bind(null, tournaments, date));
+	    let rankings = {};
+	    data.forEach(function(r) {
+		    let div = r.division;
+		    rankings[div] = rankings[div] || {};
+		    rankings[div][r.player_id] = r.points || 0;
+		});
+	    sendRequest('load-player').then(function(data) {
+		    data = JSON.parse(data);
+		    let names = {};
+		    data.forEach(p => names[p.id] = p.name);
+		    showRankings(rankings, names);
+		});
 	});
-}
-
-function gotResults(tournaments, date, results) {
-
-    let points = getFixedPoints(results, tournaments);
-
-    sendRequest('load-player').then(function(data) {
-	    data = JSON.parse(data);
-	    let names = {};
-	    data.forEach(p => names[p.id] = p.name);
-	    rankings = getRankings(date, points, tournaments);
-	    showRankings(rankings, names);
-	});
-    
-
-
 }
 
 function showRankings(rankings, names) {
@@ -32,21 +25,24 @@ function showRankings(rankings, names) {
     let divs = Object.keys(rankings),
 	html = '';
 
+    let links = divs.map(function(div) {
+	    return { id: div, text: DIV_NAME[div] };
+	});
+    html += getLinkBar(links, true);
+
     divs.forEach(function(div) {
-	    html += '<h2>' + div + '</h2>';
-            let players = Object.keys(rankings[div]);
+	    html += '<h2 id="' + div + '">' + DIV_NAME[div] + '</h2>';
+	    html += '<table>';
+            let players = Object.keys(rankings[div]),
+		i = 1;
             players.sort((a, b) => rankings[div][b] - rankings[div][a]);
-	    html += '<ol>';
             players.forEach(function(p, idx) {
                     let score = rankings[div][p];
-		    //                    scores.sort((a, b) => b - a);
-		    html += '<li>' + names[p] + ': ' + score.toFixed(2);
-		    //                    html += ' <span style="opacity:0.5;">' + scores.length + ' scores: ' + scores.map(s => s.toFixed(2)).join(',') + '</span></li>';
+		    html += '<tr><td>' + i + '</td><td>' + names[p] + '</td><td>' + score + '</td></tr>'
+		    i++;
 		});
-	    html += '</ol>';
+	    html += '</table>';
 	});
 
     $('#content').html(html);
 }
-
-
