@@ -53,6 +53,13 @@ elseif ($op == 'load-player') {
   $result = db_query($sql);
 }
 
+# gets the name of a DDC player
+elseif ($op == 'get-player') {
+  $id = db_quote(get_input('id', 'get'));
+  $sql = "SELECT * FROM player WHERE id=$id";
+  $result = db_query($sql);
+}
+
 # adds a name to the list of DDC players
 elseif ($op == 'add-player') {
   $name = db_quote(get_input('name', 'get'));
@@ -110,12 +117,20 @@ elseif ($op == 'add-result') {
 }
 
 elseif ($op == 'get-rankings') {
+  $limit = get_input('limit', 'get');
   $year = get_input('year', 'get');
-  if ($year) {
-    $sql = "SELECT player_id, division, points FROM ranking WHERE date='$year-12-31'";
+  $player = get_input('player', 'get');
+  if ($player) {
+    $sql = "SELECT player_id, division, date, points, rank FROM ranking WHERE player_id=$player";
+  }
+  elseif ($year) {
+    $sql = "SELECT player_id, division, points, rank FROM ranking WHERE date='$year-12-31'";
   }
   else {
-    $sql = "SELECT player_id, division, points FROM ranking WHERE date =(SELECT MAX(date) FROM ranking)";
+    $sql = "SELECT player_id, division, points, rank FROM ranking WHERE date =(SELECT MAX(date) FROM ranking)";
+  }
+  if ($limit) {
+    $sql = $sql . " AND rank <= $limit";
   }
   $result = db_query($sql);
 }

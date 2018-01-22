@@ -14,6 +14,21 @@ require_once('ddc.php');
 
 $pageTitle = "Double Disc Court: Rankings";
 
+$options = array();
+$sql = "SELECT DISTINCT(date) FROM ranking ORDER BY date DESC";
+$result = db_query($sql);
+foreach ($result as $idx => $row) {
+  $date = $row['date'];
+  if ($idx == 0) {
+    array_push($options, "<option value=0>Current</option>");
+  }
+  else {
+    $year = substr($date, 0, 4);
+    array_push($options, "<option value=$year>$year</option>");
+  }
+}
+$yearOptions = implode('', $options);
+
 echo <<< EOF
 <!doctype html>
 <html>
@@ -22,10 +37,10 @@ echo <<< EOF
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
 <link rel="stylesheet" href="/css/common.css">
 <link rel="stylesheet" href="/css/ddc/common.css">
+<link rel="stylesheet" href="/css/ddc/rankings.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script src="/js/common.js"></script>
-<script src="/js/ddc/ddc.js"></script>
 <script src="/js/ddc/rankings.js"></script>
 <script>
 function launch() {
@@ -36,6 +51,13 @@ function launch() {
 </head>
 <body onload="launch();">
   <div class="title">$pageTitle</div>
+  <div class="pageLinks">
+    [ <span class="pageLink" id="top25">Top 25</span> ]
+    [ <span class="pageLink" id="top50">Top 50</span> ]
+    [ <span class="pageLink" id="top100">Top 100</span> ]
+    [ <span class="pageLink" id="all">All</span> ]
+    <label id="yearLabel" for="yearSelect">Year: </label><select id="yearSelect">$yearOptions</select>
+  </div>
   <div id="content"></div>
 </body>
 </html>

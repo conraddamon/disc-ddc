@@ -1,0 +1,43 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: ranking_chart.html
+# Author: Conrad Damon
+# Date: 01/18/2018
+#
+# Graph a player's ranking through the years.
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('ddc.php');
+
+$pageTitle = "Double Disc Court: Rankings";
+
+echo <<< EOF
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/ddc/common.css">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/ddc/ranking_chart.js"></script>
+    <script>
+      function launch() {
+          initializeRankingChart();
+      }
+    </script>
+    <title>$pageTitle</title>
+  </head>
+  <body onload="launch();">
+    <!--Div that will hold the pie chart-->
+    <div id="chart_div"></div>
+  </body>
+</html>
+EOF;
+?>

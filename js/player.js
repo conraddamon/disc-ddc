@@ -45,12 +45,12 @@ function showPage(page) {
     }
 
     case 'rankingGraph': {
-	showGraph();
+	window.location = "./ranking_chart.html?id=" + window.playerId;
 	break;
     }
 
     case 'rankings': {
-	window.location = "/results/rankings.html";
+	window.location = "./rankings.html";
 	break;
     }
 
@@ -306,9 +306,4 @@ function showStats() {
 
     content.append('<div class="header">Partner</div>');
     content.append(html);
-}
-
-function showGraph() {
-
-    $('#content').html('Not yet implemented.');
 }
