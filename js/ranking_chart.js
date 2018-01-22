@@ -34,8 +34,7 @@ function drawChart(div, data) {
 	    var options = { title: 'Ranking History for ' + player.name + ' (' + DIV_NAME[div] + ')',
 			    height: 1200,
 			    vAxis: { direction: -1, minValue: 1 },
-			    //			    curveType: 'function',
-			    legend: { position: 'bottom' }
+			    legend: { position: 'none' }
 	    };
     
 	    // Instantiate and draw our chart, passing in some options.

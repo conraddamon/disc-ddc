@@ -50,9 +50,7 @@ rankings.dbQuery(query)
 	}
 	// current rankings
 	else {
-	    let promises = [];
-	    promises.push(rankings.calculateRankings(end, { bonus: bonus, debug: debug }));
-	    Promise.all(promises).then(function() {
+	    rankings.calculateRankings(end, { bonus: bonus, debug: debug }).then(function() {
 		    rankings.db.end();
 		});
 	}
