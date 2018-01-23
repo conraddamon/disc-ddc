@@ -51,14 +51,7 @@ foreach ($results as $result) {
 EOF;
    }
 
-   $teamMembers = array();
-   if ($result['player1'] != 0) {
-     array_push($teamMembers, "<a href='./player.html?id=" . $result['player1'] . "'>" . $result['name1'] . "</a>");
-   }
-   if ($result['player2'] != 0) {
-     array_push($teamMembers, "<a href='./player.html?id=" . $result['player2'] . "'>" . $result['name2'] . "</a>");
-   }
-   $team = implode(' / ', $teamMembers);
+   $team = getTeamName($result, true);
 
    $resultHtml .= "<li><div class='dataCell'>" . $result['place'] . "</div><div class='dataCell'>" . $team . "</div></li>\n";
 }
