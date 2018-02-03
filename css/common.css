@@ -1,5 +1,6 @@
 .tournament {
-  white-space: nowrap
+  white-space: nowrap;
+  margin: 0.5rem;
 }
 
 textarea {
@@ -35,4 +36,21 @@ textarea {
 .mainStat {
   text-align: center;
   font-size: 1.3rem;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td {
+    padding: .3rem 1rem;
+}
+
+table.boxed, table.boxed th, table.boxed td {
+    border: 1px solid black;
+}
+
+table.boxed th, table.boxed td {
+    padding: 15px;
+    text-align: left;
 }

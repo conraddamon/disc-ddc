@@ -2,6 +2,31 @@ a.pageLink {
     text-decoration: none;
 }
 
-#yearLabel {
+#yearLabel, #sweden {
     margin-left: 3rem;
 }
+
+#sweden {
+    margin-right: 0.5rem;
+}
+
+#yearSelect {
+    margin-right: 3rem;
+}
+
+.formula {
+    margin-left: auto;
+    margin-right: auto;
+    width: 20rem;
+}
+
+.waiting {
+    text-align: center;
+    margin: 5rem;
+}
+
+#bonusTable, #bonusTable th, #bonusTable td {
+    border: 1px solid black;
+}
+
+    

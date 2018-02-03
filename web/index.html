@@ -13,6 +13,8 @@ require_once('util.php');
 require_once('ddc.php');
 
 $pageTitle = "Double Disc Court: Tournament Results";
+$note = '';
+#$note = "<div class='subtitle' style='color:red;'>Results are under construction. Back soon.</div>";
 
 echo <<< EOF
 <!doctype html>
@@ -35,6 +37,7 @@ function launch() {
 </head>
 <body onload="launch();">
   <div class="title">$pageTitle</div>
+  $note
   <div class="pageLinks">
     [ <span class="pageLink" id="byYear">By year</span> ]
     [ <span class="pageLink" id="byName">By name</span> ]

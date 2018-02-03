@@ -1,0 +1,99 @@
+<?php
+#-----------------------------------------------------------------------------#
+# File: rankings_form.html
+# Author: Conrad Damon
+# Date: 01/18/2018
+#
+# Let the user tweak some of the settings that are used to generate rankings.
+#-----------------------------------------------------------------------------#
+
+require_once('db.php');
+require_once('log.php');
+require_once('util.php');
+require_once('ddc.php');
+
+$pageTitle = "Double Disc Court: Experiment with Rankings";
+
+echo <<< EOF
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/ddc/common.css">
+    <link rel="stylesheet" href="/css/ddc/rankings.css">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/ddc/rankings_form.js"></script>
+    <script src="/js/ddc/rankings.js"></script>
+    <script src="/js/ddc/generate_rankings.js"></script>
+    <script>
+      function launch() {
+          initializeRankingsForm();
+      }
+    </script>
+    <title>$pageTitle</title>
+  </head>
+  <body onload="launch();">
+    <div class="title">$pageTitle</div>
+    <div class="pageLinks">
+      [ <a class="pageLink" href="./rankings.html">Rankings</a> ]
+      [ <a class="pageLink" href="./rankings_explained.html">Explain</a> ]
+    </div>
+    <p>Below are the settings you can fiddle with to generate an alternate set of current rankings. To understand what they do,
+    you should read the <a href="rankings_explained.html">explanation</a> of how rankings are figured.</p>
+    <form>
+      <ul class="form">
+	<li>
+	  <div><label for="numScores">Number of scores to count: </label></div>
+	  <div><input type="number" id="numScores" value="10" /></div>
+	  <div>Your top scores (from all tournaments you've played) are added up to form your ranking points.</div>
+	</li>
+	<li>
+	  <div><label for="pointFactor">Point factor: </label></div>
+	  <div><input type="number" id="pointFactor" value="1.1" /></div>
+	  <div>How quickly points for your finish in a tournament fall off by place. Should be between 1 and 1.2.</div>
+	</li>
+	<li>
+	  <div><label for="timeFactor">Time factor: </label></div>
+	  <div><input type="number" id="timeFactor" value="1.1" /></div>
+	  <div>How quickly points for older results fall off. Should be between 1 and 1.2.</div>
+	</li>
+	<!--
+	<li>
+	  <div><label for="fullTourney">Number of entrants in a full tournament: </label></div>
+	  <div><input type="number" id="fullTourney" value="20" /></div>
+	  <div>How many teams (or players for a solo tournament) there need to be to get the full base points.</div>
+	</li>
+	-->
+	<li>
+	  <div><label for="baseA">Point base for a level A tournament: </label></div>
+	  <div><input type="number" id="baseA" value="50" /></div>
+	  <div>Point base for a tournament of level A.</div>
+	</li>
+	<li>
+	  <div><label for="baseB">Point base for a level B tournament: </label></div>
+	  <div><input type="number" id="baseB" value="125" /></div>
+	  <div>Point base for a tournament of level B.</div>
+	</li>
+	<li>
+	  <div><label for="baseC">Point base for a level C tournament: </label></div>
+	  <div><input type="number" id="baseC" value="200" /></div>
+	  <div>Point base for a tournament of level C.</div>
+	</li>
+	<li>
+	  <div><label for="baseD">Point base for a level D tournament: </label></div>
+	  <div><input type="number" id="baseD" value="250" /></div>
+	  <div>Point base for a tournament of level D.</div>
+	</li>
+      </ul>
+    </form>
+    <button id="submitButton">Go!</button>
+    <div id="content"></div>
+  </body>
+</html>
+EOF;
+?>

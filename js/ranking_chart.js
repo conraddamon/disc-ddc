@@ -1,5 +1,9 @@
 function initializeRankingChart() {
 
+    $('#sweden').change(function(e) {
+	    drawChart();
+	});
+
     // Load the Visualization API and the corechart package.
     google.charts.load('current', {'packages':['corechart']});
 
@@ -12,19 +16,27 @@ function getPlayer() {
     let qs = parseQueryString(),
 	pid = qs.id;
 
-    sendRequest('get-player', { id: pid }).then(drawChart.bind(null, qs.div));
+    sendRequest('get-player', { id: pid }, function(player) {
+	    drawChart(qs.div, player[0]);
+	});
 }
 
 // Callback that creates and populates a data table,
 // instantiates the pie chart, passes in the data and
 // draws it.
-function drawChart(div, data) {
+function drawChart(div, player) {
 
-    let player = JSON.parse(data)[0];
-    div = div || (player.sex === 'female' ? 'W' : 'O');
-    sendRequest('get-rankings', { player: player.id }).then(function(rankData) {
+    player = window.curPlayer = player || window.curPlayer;
+    div = window.curDiv = div || window.curDiv || (player.sex === 'female' ? 'W' : 'O');
+    
+    let options = { player: player.id };
+    if ($('#sweden').prop('checked')) {
+	options.sweden = true;
+    }
+
+    sendRequest('get-rankings', options).then(function(rankData) {
             rankData = JSON.parse(rankData);
-	    let chartData = rankData.filter(row => row.division === div).map(row => [ row.date.substr(0, 4), Number(row.rank) ]);
+	    let chartData = rankData.filter(row => row.division === div).map(row => [ row.year, Number(row.rank) ]);
 
 	    // Create the data table.
 	    chartData.unshift([ 'Year', 'Rank' ]);

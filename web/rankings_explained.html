@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/ddc/common.css">
+<link rel="stylesheet" href="/css/ddc/rankings.css">
+<title>How the DDC Rankings Work</title>
+</head>
+<body>
+  <div class="title">How the DDC Rankings Work</div>
+  <div class="pageLinks">
+    [ <a class="pageLink" href="./rankings.html">Rankings</a> ]
+    [ <a class="pageLink" href="./rankings_form.html">Experiment</a> ]
+  </div>
+  <div class="header">How rankings worked 1994-2017</div>
+  <p>In the past, there were two phases to the rankings: fixed and relative. The fixed phase awarded points based on the level of the tournament, a letter ranging from A to D (see below). The relative phase awarded points based on who you beat, in order to account for the depth and quality of a tournament. Either three or five years' worth of results were considered, and older results would be reduced a bit depending on their age. Your ranking was the sum of your best five scores.</p>
+  <p>That worked pretty well, and was typically quite accurate as a predictor when used for seedings. However, it did have a logical flaw that was never corrected: In the relative phase, you got a percentage of the ranking points (from the fixed phase) of the ten players who finished immediately below you. However, those ranking points were current, rather than the ranking points they had at the time you beat them. Not a huge problem, but wrong. If the ranking of someone you beat changed significantly between the time you beat them and when rankings were done, you'd get the wrong number of points for beating them.</p>
+  <p>There are several reasons I've gone to a new system (though it's not all that different):
+    <ol>
+      <li>The whole results site was being overhauled, so now's the time.</li>
+      <li>I wanted to be able to generate historical results.</li>
+      <li>The relative phase is clever but complicated.</li>
+    </ol>
+  </p>
+  <div class="header">How rankings work starting in 2018</div>
+  <p>Warning: There's a fair amount of math involved. Shocking, I know. The DDC rankings are now fairly similar to (as well as inspired by) the <a href="https://shrednow.com/rankings/pointscales.html">freestyle ranking system</a>. Divisions are considered separately for rankings.</p>
+  <div class="subheader">Step 1: Determine the point base</div>
+  <p>We start (as before) by giving the tournament a level. Note that the level is a measure of the importance of the tournament, and may not correlate to the quality and/or depth of the field. Each level has a point base. The winner gets that many points, and on down from there. The levels are:
+    <table class="boxed">
+      <tr><th>Level</th><th>Points</th><th>Type</th><th>Description</th><th>Examples</th></tr>
+      <tr><td>A</td><td>50</td><td>Small</td><td>Local and/or impromptu tournament</td><td><a href="./tournament.html?id=303">Stanford KOC</a></td></tr>
+      <tr><td>B</td><td>125</td><td>Medium</td><td>State championship or series event</td><td><a href="./tournament.html?id=354">Hostkastet Open</a>, <a href="./tournament.html?id=285">North Carolina States</a></td></tr>
+      <tr><td>C</td><td>200</td><td>Major</td><td>Top-tier tournament and/or a regional championship</td><td><a href="./tournament.html?id=359">Virginia States</a>, <a href="./tournament.html?id=368">Swedisc</a></td></tr>
+      <tr><td>D</td><td>250</td><td>Championship</td><td>WFDF or US Open</td><td><a href="./tournament.html?id=369">WFDF</a>, <a href="./tournament.html?id=351">US Open</a></td></tr>
+    </table>
+  </p>
+<!--
+  <p>The point base undergoes one modification in order to account for how well-attended the tournament was (except for level D: a championship is a championship). A full tournament is considered to have 20 entrants (usually teams, but could be solo players for a KOC tournament). Any tournament of level A, B, or C will have its point base reduced if it's not full. It gets half its point base, plus a portion of the remaining half corresponding to how full it was. For example, a C-level tournament with 10 teams has a point base of 150.</p>
+-->
+  <div class="subheader">Step 2: Award points based on finish</div>
+  <p>One thing to note here is that points are awarded to individual players, so a two-player team splits the available points (they also split with any team they tied with).</p>
+  <p>Points start with the base, and go down based on an exponential function. That means that there are bigger gaps at the top. The idea behind that is that the difference between first and second is more significant than the difference between 11th and 12th. The number that controls how fast points go down is currently set to 1.1. (If set to 1.2, points go down faster.) Here is the equation for awarding points:</p>
+<div class="formula"><code>points = base * (1 / 1.1 ** place)</code></div>
+<p>** means "raised to the power of". With 1.1 and a point base of 100, points go down as follows: 100, 91, 83, 75, 68, 62, 56, 51, 46, 42, ...</p>
+  <div class="subheader">Step 3: Age results</div>
+  <p>Recent results count more than old results. We used to only look at tournaments from the last three or five years, but since we're degrading results over time there's no reason we can't consider all of them. That third place you got 20 years ago isn't going to count for much unless you've hardly played since then. Results are aged in terms of seasons, with each season being the calendar year. That means you just need to look at the year of the tournament. Older results fall off the at the same rate that points do, using that same factor of 1.1. A result from two years ago will be worth 83% of its points.</p>
+  <div class="subheader">Step 4: Award bonus points</div>
+  <p>Instead of accounting for who you beat by giving you a portion of their ranking points (a bit self-referential), a simpler system of bonus points is used, where you earn them based on the ranking of each player you beat.</p>
+  <table id="bonusTable">
+    <tr><th>Ranking</th><th>Bonus</th></tr>
+    <tr><td>1 - 5</td><td>10</td></tr>
+    <tr><td>6 - 10</td><td>7.5</td></tr>
+    <tr><td>11 - 20</td><td>5</td></tr>
+    <tr><td>21 - 50</td><td>2.5</td></tr>
+    <tr><td>51 - 100</td><td>1</td></tr>
+    <tr><td>101 - 200</td><td>0.5</td></tr>
+  </table>
+  <div class="subheader">Step 5: Calculate the ranking</div>
+  <p>Every player gets a score for every tournament they've ever played. A player's top 10 scores are added up to form their ranking.</p>
+</body>
+</html>

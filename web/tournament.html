@@ -19,6 +19,16 @@ $tournament = db_query($sql, 'one');
 $pageTitle = getTournamentTitle($tournament);
 $header = getTournamentHeader($tournament);
 $level = "<div class='description'>Tournament level: " . $tournament['level'] . "</div>";
+$tagText = '';
+if (strpos($tournament['tags'], 'sweden') !== false) {
+   $tagText .= "<div>Tournament series: Swedish tour</div>";
+}
+if (strpos($tournament['tags'], 'koc') !== false) {
+   $tagText .= "<div>Tournament format: King of the Court</div>";
+}
+if (strpos($tournament['tags'], 'incomplete') !== false && strpos($tournament['description'], 'Incomplete') === false) {
+   $tagText .= "<div>*Incomplete results. If you have more results for this tournament, please send them to <a href='mailto:conrad_damon@yahoo.com'>me</a>.</div>";
+}
 $text = '';
 $description = $tournament['description'];
 if ($description) {
@@ -65,11 +75,16 @@ echo <<< EOF
 <title>$pageTitle</title>
 </head>
 <body>
-  $header
-</body>
+$header
+  <div class="pageLinks">
+    [ <span class="pageLink"><a href='./'>Results</a></span> ]
+    [ <span class="pageLink"><a href='./rankings.html'>Rankings</a></span> ]
+  </div>
 $resultHtml
 $level
+$tagText
 $text
+</body>
 </html>
 EOF;
 

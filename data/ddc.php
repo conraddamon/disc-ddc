@@ -8,6 +8,11 @@
 # DDC tournaments.
 #-----------------------------------------------------------------------------#
 
+# Minimal security check to prevent direct access to REST calls
+if ($_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
+  exit('');
+}
+
 require_once('db.php');
 require_once('log.php');
 require_once('util.php');
@@ -15,8 +20,14 @@ require_once('util.php');
 $op = get_input('op', 'get');
 elog(LOG_INFO, "ddc.php, op=$op");
 
+# runs an SQL query
+if ($op == 'run-query') {
+  $sql = get_input('sql', 'get');
+  $result = db_query($sql);
+}
+
 # gets data for a tournament
-if ($op == 'get-tournament') {
+elseif ($op == 'get-tournament') {
   $tournamentId = get_input('tournamentId', 'get');
   $sql = "SELECT * FROM tournament WHERE id=$tournamentId";
   $result = db_query($sql, 'one');
@@ -77,8 +88,7 @@ elseif ($op == 'get-results') {
     $sql = "SELECT * FROM result WHERE tournament_id=$tournamentId";
   }
   elseif ($playerId) {
-    $sql = "SELECT r.*, p1.name AS name1, p2.name AS name2 FROM result r JOIN player p1 ON (p1.id=r.player1) LEFT JOIN player p2 ON (p2
-.id=r.player2) WHERE player1=$playerId OR player2=$playerId";
+    $sql = "SELECT r.*, p1.name AS name1, p2.name AS name2 FROM result r JOIN player p1 ON (p1.id=r.player1) LEFT JOIN player p2 ON (p2.id=r.player2) WHERE player1=$playerId OR player2=$playerId";
   }
   elseif ($before || $after) {
     if ($before) {
@@ -117,17 +127,30 @@ elseif ($op == 'add-result') {
 }
 
 elseif ($op == 'get-rankings') {
+
   $limit = get_input('limit', 'get');
   $year = get_input('year', 'get');
   $player = get_input('player', 'get');
-  if ($player) {
-    $sql = "SELECT player_id, division, date, points, rank FROM ranking WHERE player_id=$player";
+  $maxYear = get_input('maxYear', 'get');
+  $allYears = get_input('allYears', 'get');
+  $sweden = get_input('sweden', 'get');
+
+  $table = $sweden ? 'sweden_ranking' : 'ranking';
+
+  if ($maxYear) {
+    $sql = "SELECT MAX(year) AS year FROM $table";
+  }
+  elseif ($allYears) {
+    $sql = "SELECT DISTINCT(year) FROM $table ORDER BY year DESC";
+  }
+  elseif ($player) {
+    $sql = "SELECT player_id, division, year, points, rank FROM $table WHERE player_id=$player";
   }
   elseif ($year) {
-    $sql = "SELECT player_id, division, points, rank FROM ranking WHERE date='$year-12-31'";
+    $sql = "SELECT player_id, division, points, rank FROM $table WHERE year='$year'";
   }
   else {
-    $sql = "SELECT player_id, division, points, rank FROM ranking WHERE date =(SELECT MAX(date) FROM ranking)";
+    $sql = "SELECT player_id, division, points, rank FROM $table WHERE year = (SELECT MAX(year) FROM $table)";
   }
   if ($limit) {
     $sql = $sql . " AND rank <= $limit";
@@ -135,5 +158,5 @@ elseif ($op == 'get-rankings') {
   $result = db_query($sql);
 }
 
-echo json_encode($result);
+echo json_encode(as_utf8($result));
 ?>

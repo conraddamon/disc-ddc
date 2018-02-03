@@ -1,5 +1,9 @@
+"use strict";
+
 /*
- * Functions to help server-side calculation of DDC player rankings.
+ * Code to calculate DDC player rankings.
+ *
+ * 2018-01-29: Remove reduction for non-full tournament
  */
 
 /*
@@ -32,7 +36,8 @@ const TIME_FACTOR = 1.1;
 const NUM_SCORES = 10;
 
 // Order in which to show divisions (if displaying rankings)
-const DIV_ORDER = [ 'O', 'W', 'OJ', 'WJ', 'OM', 'WM', 'OGM', 'WGM', 'OSGM', 'WSGM', 'OL', 'MX' ];
+const SETTING = {};
+SETTING.DIV_ORDER = typeof DIV_ORDER == 'undefined' ? [ 'O', 'W', 'OJ', 'WJ', 'OM', 'WM', 'OGM', 'WGM', 'OSGM', 'WSGM', 'OL', 'MX' ] : DIV_ORDER;
 
 const BONUS = [];
 (function() {
@@ -58,121 +63,233 @@ const BONUS = [];
     }
 })();
 
-// Connect to Mysql
-let mysql = require('mysql');
-let db = mysql.createConnection({
-	host    : 'localhost',
-	user    : 'cdamon',
-	password: 'Lmdc1ddc',
-	database: 'cdamon_ddc'
-    });
+// how many tournaments to fetch results for at a time
+const CHUNK_SIZE = 50;
 
-db.connect();
+// Connect to Mysql
+let db;
+if (typeof require !== 'undefined') {
+    let mysql = require('mysql');
+    db = mysql.createConnection({
+	    host    : 'localhost',
+	    user    : 'cdamon',
+	    password: 'Lmdc1ddc',
+	    database: 'cdamon_ddc'
+	});
+    db.connect();
+}
 
 // Remember player names in case we're called more than once
 let playerNames = {};
 
-let debug;
+function generateRankings(options) {
 
-/*
- * Calculates rankings based on fixed points. Returns a promise so it can be called many times in series.
- *
- * @param {string} date     cutoff date for tournaments to consider (based on their end date), in Mysql format eg '1995-12-31'
- */
-function calculateRankings(date, options) {
-
-    debug = options.debug;
+    options = options || {};
+    options.pointBase = options.pointBase || POINT_BASE;
+    options.numScores = options.numScores || NUM_SCORES;
+    options.pointFactor = options.pointFactor || POINT_FACTOR;
+    options.timeFactor = options.timeFactor || TIME_FACTOR;
+    options.fullTourney = options.fullTourney || FULL_TOURNEY;
 
     return new Promise(function(resolve, reject) {
 
-	    // get tournament data
-	    console.log('\n' + 'Date: ' + date + '\n');
-	    let tournamentData;
-	    getTournaments(date)
+	    let order = options.all ? 'ASC' : 'DESC',
+		query = "SELECT MIN(end) AS first, MAX(end) AS last FROM tournament",
+		firstYear, lastYear,
+		funcs = [];
+
+	    if (options.sweden) {
+		query = query + " WHERE FIND_IN_SET('sweden',tags) > 0";
+	    }
+
+	    // first, figure out the time period we need results from
+	    dbQuery(query, options)
 		.then(function(data) {
-			tournamentData = data;
-			return debug ? getPlayerNames() : Promise.resolve();
+			firstYear = toMysqlDate(data[0].first).substr(0, 4);
+			lastYear = toMysqlDate(data[0].last).substr(0, 4);
+			// delete existing rankings
+			return !options.test && options.save ? deleteRecords(options) : Promise.resolve();
 		    })
 		.then(function() {
-			return getPlayerRankings(date);
-		})
-		.then(function(rankingData) {
-
-		    let curRankings = {};
-                    rankingData.forEach(function(row) {
-                            let d = toMysqlDate(row.date),
-				div = row.division;
-
-                            curRankings[d] = curRankings[d] || {};
-                            curRankings[d][div] = curRankings[d][div] || {};
-                            curRankings[d][div][row.player_id] = row.rank;
-                        });
-	    
-		    let promises = [],
-			tournaments = {},
-			results = [];
-			
-			for (let i = 0; i < tournamentData.length; i++) {
-			    let tournament = tournamentData[i];
-			    tournament.end = toMysqlDate(tournament.end);
-			    tournaments[tournament.id] = tournament;
-			    promises.push(processTournament(tournament, date, results));
+			// historical rankings
+			if (options.all) {
+			    // create a list of functions that will generate rankings
+			    for (let year = firstYear; year <= lastYear; year++) {
+				funcs.push(calculateRankings.bind(null, year, options));
+			    }
+			    
+			    // invoke the functions
+			    promiseSerial(funcs).then(function() {
+				    if (db) {
+					db.end();
+				    }
+				});
 			}
-			let tournamentsPromise = Promise.all(promises);
-			tournamentsPromise.then(function(results) {
-				let points = {};
-				results.forEach(function(tournamentResults) {
-					let tid = tournamentResults[0].tournament_id;
-					getPoints(points, tournamentResults, tournaments[tid], curRankings, options);
-				    });
-				let rankings = getRankings(date, points, tournaments);
-				if (debug) {
-				    showPoints(rankings, playerNames);
-				}
-				else {
-				    writePoints(rankings, date).then(function() {
-					    resolve();
-					});
-				}
-			    });
+			// current rankings
+			else {
+			    calculateRankings(lastYear, options).then(function(rankings) {
+				    resolve(rankings);
+				    if (db) {
+					db.end();
+				    }
+				});
+			}
 		    });
     });
 }
 
 /*
- * Returns a promise that fetches results for the given tournament.
+ * Deletes either latest or all rankings.
  *
- * @param {object} tournament    tournament
+ * @param {boolean} all    if true, delete all rankings; otherwise, just delete the latest ones
+ *
+ * @return Promise
  */
-function processTournament(tournament, date, results) {
+function deleteRecords(options) {
+
+    options = options || {};
+
+    let table = options.sweden ? 'sweden_ranking' : 'ranking',
+	query = "DELETE r FROM " + table + " r JOIN (SELECT MAX(year) AS maxyear FROM " + table + ") x ON r.year = x.maxyear";
+
+    if (options.all) {
+	query = "DELETE FROM " + table;
+    }
+
+    return dbQuery(query, options);
+}
+
+// Executes a series of Promises serially.
+// from https://hackernoon.com/functional-javascript-resolving-promises-sequentially-7aac18c4431e
+const promiseSerial = funcs =>
+    funcs.reduce((promise, func) =>
+		 promise.then(result => func().then(Array.prototype.concat.bind(result))),
+		 Promise.resolve([]));
+
+/*
+ * Calculates rankings based on fixed points. Returns a promise so it can be called many times in series.
+ *
+ * @param {string} year     cutoff year for tournaments to consider (based on their end date)
+ */
+function calculateRankings(year, options) {
+
+    options = options || {};
 
     return new Promise(function(resolve, reject) {
 
-	    let query = 'SELECT * FROM result WHERE tournament_id=' + tournament.id,
-		year = Number((date.split('-'))[0]),
-		tournamentYear = tournament.end.substr(0, 4),
-		yearDelta = year - tournamentYear;
+	    // get tournament data
+	    console.log('Year: ' + year);
+	    let tournamentData;
+	    getTournaments(year, options)
+		.then(function(data) {
+			tournamentData = data;
+			return options.test ? getPlayerNames() : Promise.resolve();
+		    })
+		.then(function() {
+			return getPlayerRankings(year);
+		})
+		.then(function(rankingData) {
 
-	    db.query(query, function(error, data) {
-		    if (!error) {
-			resolve(data);
+		    let curRankings = {};
+                    rankingData.forEach(function(row) {
+                            let y = row.year,
+				div = row.division;
+
+                            curRankings[y] = curRankings[y] || {};
+                            curRankings[y][div] = curRankings[y][div] || {};
+                            curRankings[y][div][row.player_id] = row.rank;
+                        });
+	    
+		    let promises = [],
+			tournaments = {},
+			results = [];
+
+		    // request results in chunks
+		    tournamentData.sort((a, b) => a.id - b.id);
+		    let ids = [];
+		    for (let i = 0; i < tournamentData.length; i++) {
+			let tournament = tournamentData[i],
+			    id = tournament.id;
+
+			tournament.end = toMysqlDate(tournament.end);
+			tournaments[id] = tournament;
+			ids.push(id);
+			if ((i + 1) % CHUNK_SIZE === 0) {
+			    promises.push(getResults(ids));
+			    ids = [];
+			}
 		    }
-		});
+		    if (ids.length) {
+			promises.push(getResults(ids));
+		    }
+			
+		    let tournamentsPromise = Promise.all(promises);
+		    tournamentsPromise.then(function(results) {
+			    // flatten chunks into single list of results
+			    results = [].concat.apply([], results);
+
+			    // organize results by tournament
+			    let points = {},
+				resultsByTournament = {};
+
+			    results.forEach(function(result) {
+				    let tid = result.tournament_id;
+				    resultsByTournament[tid] = resultsByTournament[tid] || [];
+				    resultsByTournament[tid].push(result);
+				});
+				
+			    // award ranking points for each tournament
+			    Object.keys(resultsByTournament).forEach(function(tid) {
+				    getPoints(points, resultsByTournament[tid], tournaments[tid], curRankings, options);
+				});
+
+			    // add up ranking points by player
+			    let rankings = getRankings(year, points, tournaments, options);
+			    if (options.test) {
+				if (options.save) {
+				    showPoints(rankings, playerNames);
+				}
+				resolve(rankings);
+			    }
+			    else {
+				if (options.save) {
+				    writePoints(rankings, year, options).then(function() {
+					    resolve(rankings);
+					});
+				}
+				else {
+				    resolve(rankings);
+				}
+			    }
+			});
+		    });
     });
 }
 
-// award points for a tournament
+/*
+ * Awards ranking points for each player in a tournament.
+ *
+ * @param {object} points         used to accumulate results
+ * @param {object} results        results for a single tournament
+ * @param {object} tournament     tournament data
+ * @param {object} rankings       rankings up to now (for awarding bonus points)
+ * @param {object} options
+ */
 function getPoints(points, results, tournament, rankings, options) {
+
+    options = options || {};
 
     // figure out point base
     let level = tournament.level,
-	base = POINT_BASE[level],
+	base = options.pointBase[level],
 	numEntrants = results.length;
 
     // for non-championship tournament, bump base down if not fully attended
-    if (level !== 'D' && numEntrants < FULL_TOURNEY) {
-	base = .5 * base + (.5 * (numEntrants / FULL_TOURNEY) * base);
+    /*
+    if (level !== 'D' && numEntrants < options.fullTourney) {
+	base = .5 * base + (.5 * (numEntrants / options.fullTourney) * base);
     }
+    */
     
     // determine how many players finished in each place so we can account for ties (and solo play)
     let placeCount = {};
@@ -188,28 +305,28 @@ function getPoints(points, results, tournament, rankings, options) {
     // figure out how many points to award to each place
     let placePoints = {};
     Object.keys(placeCount).forEach(function(tid) {
-	let base = POINT_BASE[tournament.level];
 	Object.keys(placeCount).forEach(function(div) {
 		Object.keys(placeCount[div]).forEach(function(place) {
 			let p = Number(place);
 			placePoints[div] = placePoints[div] || {};
 			placePoints[div][place] = 0;
 			for (let i = 0; i < placeCount[div][place]; i++) {
-			    placePoints[div][place] += base * (1 / (Math.pow(POINT_FACTOR, p + i - 1)));
+			    placePoints[div][place] += base * (1 / (Math.pow(options.pointFactor, p + i - 1)));
 			}
 		    });
 	    });
 	});
 
-    let rankingDates = Object.keys(rankings).sort(),
-        tournamentDate = tournament.end,
-	rankingDate;
+    // find the latest set of rankings before the tournament
+    let rankingYears = Object.keys(rankings).sort(),
+        tournamentYear = tournament.end.substr(0, 4),
+	rankingYear;
 
-    for (let i = 0; i < rankingDates.length; i++) {
-        if (rankingDates[i] > tournamentDate) {
+    for (let i = 0; i < rankingYears.length; i++) {
+        if (rankingYears[i] >= tournamentYear) {
             break;
         }
-	rankingDate = rankingDates[i];
+	rankingYear = rankingYears[i];
     }
     
     // award points by tournament/division/player
@@ -227,19 +344,16 @@ function getPoints(points, results, tournament, rankings, options) {
 			pts = Number(Math.max(placePoints[div][place] / placeCount[div][place], 1));
 		    
 		    if (place !== curPlace && totalBonus > 0) {
-			//console.log("Points = " + Math.round(pts) + "; Bonus for " + [tid,div,place].join('/') + " for " + playerNames[result.player1] + ": " + totalBonus);
 			bonus = totalBonus;
 		    }
-		    if (options.bonus) {
-			pts += bonus;
-		    }
+		    pts += bonus;
 		    
 		    points[tid] = points[tid] || {};
 		    points[tid][div] = points[tid][div] || {};
 		    [ result.player1, result.player2 ].forEach(p => { 
 			    if (p > 0) {
 				points[tid][div][p] = pts.toFixed(2);
-				let b = (rankings[rankingDate] && rankings[rankingDate][div] && BONUS[rankings[rankingDate][div][p]]) || 0;
+				let b = (rankings[rankingYear] && rankings[rankingYear][div] && BONUS[rankings[rankingYear][div][p]]) || 0;
 				totalBonus += b;
 			    }
 			});
@@ -253,11 +367,14 @@ function getPoints(points, results, tournament, rankings, options) {
 /*
  * Calculates ranking points by division for each player. Degrades older results and takes the top score
  * for each player. The data returned is in the form ranking[division][player_id].
+ *
+ * @param {string} year    year that rankings are for
  */
-function getRankings(date, points, tournaments) {
+function getRankings(year, points, tournaments, options) {
 
-    let year = Number((date.split('-'))[0]),
-	rankingPoints = {};
+    options = options || {};
+
+    let rankingPoints = {};
 
     // degrade results by age
     Object.keys(points).forEach(function(tid) {
@@ -268,7 +385,7 @@ function getRankings(date, points, tournaments) {
 	    Object.keys(points[tid]).forEach(function(div) {
 		    rankingPoints[div] = rankingPoints[div] || {};
 		    Object.keys(points[tid][div]).forEach(function(pid) {
-			    let pts = Number(points[tid][div][pid]) * (1 / Math.pow(TIME_FACTOR, yearDelta));
+			    let pts = Number(points[tid][div][pid]) * (1 / Math.pow(options.timeFactor, yearDelta));
 			    rankingPoints[div][pid] = rankingPoints[div][pid] || [];
 			    rankingPoints[div][pid].push(pts);
 			});
@@ -285,7 +402,7 @@ function getRankings(date, points, tournaments) {
             players.forEach(function(p) {
                     let scores = rankingPoints[div][p];
                     scores.sort((a, b) => b - a);
-                    ranking[div][p] = scores.slice(0, NUM_SCORES).reduce((a, b) => a + b);
+                    ranking[div][p] = scores.slice(0, options.numScores).reduce((a, b) => a + b);
 		});
 	});
 
@@ -300,7 +417,6 @@ function getPlayerNames() {
 		resolve(playerNames);
 	    }
 	    else {
-		console.log('getting player names');
 		db.query('SELECT id,name FROM player', function(error, results) {
 			if (!error) {
 			    results.forEach(p => playerNames[p.id] = p.name);
@@ -312,9 +428,13 @@ function getPlayerNames() {
 }
 
 // Writes rankings to the database
-function writePoints(points, date) {
+function writePoints(points, year, options) {
 
-    let promises = [];
+    options = options || {};
+
+    let promises = [],
+	table = options.sweden ? 'sweden_ranking' : 'ranking';
+
     Object.keys(points).forEach(function(div) {
 	    let players = Object.keys(points[div]),
 		curPoints, rank;
@@ -325,11 +445,11 @@ function writePoints(points, date) {
 		    if (pts != curPoints) {
 			rank = idx + 1;
 		    }
-		    let values = [ p, quote(div), quote(date), pts, rank ].join(', '),
-			query = 'INSERT INTO ranking(player_id, division, date, points, rank) VALUES(' + values + ')';
+		    let values = [ p, quote(div), quote(year), pts, rank ].join(', '),
+			query = 'INSERT INTO ' + table + '(player_id, division, year, points, rank) VALUES(' + values + ')';
 
 		    promises.push(new Promise(function(resolve, reject) {
-				if (debug) {
+				if (options.test) {
 				    console.log(query);
 				    resolve();
 				}
@@ -351,7 +471,7 @@ function writePoints(points, date) {
 function showPoints(points, names) {
 
     let divs = Object.keys(points);
-    divs.sort((a, b) => DIV_ORDER.indexOf(a) - DIV_ORDER.indexOf(b));
+    divs.sort((a, b) => SETTING.DIV_ORDER.indexOf(a) - SETTING.DIV_ORDER.indexOf(b));
     divs.forEach(function(div) {
 	    console.log('\n' + div + '\n');
 	    let players = Object.keys(points[div]);
@@ -362,41 +482,98 @@ function showPoints(points, names) {
 	});
 }
 
-function getTournaments(date) {
+/*
+ * Returns a promise that fetches tournaments that ended during or before the given year.
+ *
+ * @param {string} year    latest year to get tournaments for
+ *
+ * @return Promise
+ */
+function getTournaments(year, options) {
 
-    return dbQuery("SELECT id,end,name,level FROM tournament WHERE end <= '" + date + "'");
+    options = options || {};
+
+    let query = "SELECT id,end,name,level FROM tournament WHERE end <= '" + year + "-12-31'";
+    if (options.sweden) {
+	query += " AND FIND_IN_SET('sweden',tags) > 0";
+    }
+    return dbQuery(query, options);
 }
 
-function getPlayerRankings(date) {
+function getResults(ids) {
 
-    return dbQuery("SELECT * FROM ranking WHERE date <= '" + date + "'");
+    return dbQuery("SELECT * FROM result WHERE tournament_id IN (" + ids.join(',') + ")");
 }
 
-function dbQuery(query) {
+/*
+ * Returns a promise that fetches results for the given tournament.
+ *
+ * @param {string} tournamentId    tournament ID
+ *
+ * @return Promise
+ */
+function getTournament(tournamentId) {
+
+    return dbQuery("SELECT * FROM result WHERE tournament_id=" + tournamentId);
+}
+
+/*
+ * Returns a promise that fetches player rankings up to the given year
+ *
+ * @param {string} year    latest year to get rankings for
+ *
+ * @return Promise
+ */
+function getPlayerRankings(year, options) {
+
+    options = options || {};
+
+    let table = options.sweden ? 'sweden_ranking' : 'ranking';
+    return dbQuery("SELECT * FROM " + table + " WHERE year <= '" + year + "'", options);
+}
+
+function dbQuery(query, options) {
+
+    options = options || {};
 
     return new Promise(function(resolve, reject) {
 
 	    // check for write
-	    if (debug && query.indexOf('SELECT') === -1) {
+	    if (options.test && query.indexOf('SELECT') === -1) {
 		console.log(query);
 		resolve();
 	    }
 	    else {
-		//console.log('query: ' + query);
-		db.query(query, function(error, data) {
-			if (error) {
-			    console.log(error);
-			    reject(error);
-			}
-			else {
+		if (options.test) {
+		    console.log(query);
+		}
+		if (db) {
+		    db.query(query, function(error, data) {
+			    if (error) {
+				console.log(error);
+				reject(error);
+			    }
+			    else {
+				resolve(data || []);
+			    }
+			});
+		}
+		else {
+		    console.log('sending request: ' + query);
+		    sendRequest('run-query', { sql: query }, function(data) {
+			    console.log('got response, resolving');
 			    resolve(data || []);
-			}
-		    });
+			});
+		}
 	    }
     });
 }
 
 function toMysqlDate(date) {
+
+    if (!date || !date.getMonth) {
+	return date;
+    }
 
     let month = date.getMonth() + 1,
         day = date.getDate(),
@@ -412,10 +589,9 @@ function quote(str) {
     return "'" + str + "'";
 }
 
-module.exports = {
-    db: db,
-    dbQuery: dbQuery,
-    calculateRankings: calculateRankings,
-    toMysqlDate: toMysqlDate,
-    quote: quote
-};
+if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+	exports = module.exports;
+    }
+    exports.generateRankings = generateRankings;
+}

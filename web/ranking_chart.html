@@ -12,7 +12,9 @@ require_once('log.php');
 require_once('util.php');
 require_once('ddc.php');
 
-$pageTitle = "Double Disc Court: Rankings";
+$id = get_input('id', 'get');
+
+$pageTitle = "Double Disc Court: Ranking Chart";
 
 echo <<< EOF
 <!doctype html>
@@ -22,6 +24,7 @@ echo <<< EOF
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
     <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/ddc/common.css">
+    <link rel="stylesheet" href="/css/ddc/rankings.css">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
@@ -35,7 +38,13 @@ echo <<< EOF
     <title>$pageTitle</title>
   </head>
   <body onload="launch();">
-    <!--Div that will hold the pie chart-->
+    <div class="title">$pageTitle</div>
+    <div class="pageLinks">
+      [ <a class="pageLink" href="./player.html?id=$id">Player</a> ]
+      [ <a class="pageLink" href="./rankings.html">Rankings</a> ]
+      <input id="sweden" type="checkbox" /><label id="swedenLabel" for="sweden">Sweden</label>
+    </div>
+    <!--Div that will hold the chart-->
     <div id="chart_div"></div>
   </body>
 </html>

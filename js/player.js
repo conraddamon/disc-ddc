@@ -1,6 +1,3 @@
-DIV_NAME['MX'] = 'Mixed';
-DIV_ORDER.push('MX');
-
 function initializePlayer(playerId) {
 
     window.playerId = playerId;
@@ -13,29 +10,39 @@ function initializePlayer(playerId) {
     var requests = [ getResults, getTournaments ],
 	callbacks = [ gotResults, gotTournaments ];
 
-    sendRequests(requests, callbacks).then(showPage.bind(null, 'results'));
+    //    sendRequests(requests, callbacks).then(showPage.bind(null, 'results'));
+    sendRequests(requests, callbacks).then(() => showPage('results'));
 }
 
 function gotResults(data) {
 
     window.resultData = {};
-    data.forEach(result => window.resultData[result.id] = result);
+    if (data) {
+	data.forEach(result => window.resultData[result.id] = result);
+    }
 }
 
 function gotTournaments(data) {
 
     window.tournamentData = {};
-    data.forEach(tournament => window.tournamentData[tournament.id] = tournament);
+    if (data) {
+	data.forEach(tournament => window.tournamentData[tournament.id] = tournament);
+    }
 }
 
-function showPage(page) {
+function showPage(page, tournament) {
 
     $('#content').html('');
+
+    // current selection is underlined
+    $('#' + window.curPage).removeClass('current');
+    $('#' + page).addClass('current');
+    window.curPage = page;
 
     switch(page) {
 
     case 'results': {
-	showResults();
+	showResults(tournament);
 	break;
     }
  
@@ -57,23 +64,24 @@ function showPage(page) {
     }
 }
 
-function showResults() {
+function showResults(tournament) {
 
     $('#content').append('<table class="resultsTable" id="resultsTable"></table>');
 
     var html = '<tr>';
-    [ 'Date', 'Tournament', 'Division', 'Place', 'Partner' ].forEach(column => html += getResultHeader(column));
+    [ 'Date', 'Tournament', 'Division', 'Place', 'Partner' ].forEach(column => html += getResultHeader(column, 'result'));
     html += '</tr>';
     $('#resultsTable').append(html);
 
-    displayResults();
+    displayResults('date', tournament);
 
     $('#resultsTable th span').click(sortResults);
 }
 
-function getResultHeader(column) {
+function getResultHeader(column, idPrefix) {
 
-    return '<th class="ddcHeader" id="result_' + column.toLowerCase() + '"><span class="pageLink">' + column + '</span></th>';
+    let id = [ idPrefix, column.toLowerCase() ].join('_');
+    return '<th class="ddcHeader" id="' + id + '"><span class="pageLink">' + column + '</span></th>';
 }
 
 function sortResults(e) {
@@ -88,9 +96,16 @@ function sortResults(e) {
     displayResults(column);
 }
 
-function displayResults(column='date') {
+function displayResults(column='date', tournament) {
 
     var resultIds = Object.keys(window.resultData);
+
+    if (tournament) {
+	resultIds = resultIds.filter(function(id) {
+		let tName = window.tournamentData[window.resultData[id].tournament_id].name;
+		return (tName === tournament);
+	    });
+    }
 
     // current sort header is underlined
     $('#resultsTable span.current').removeClass('current');
@@ -208,102 +223,171 @@ function getShortDate(date) {
     return MMM[date.getMonth()] + ' ' + date.getFullYear();
 }
 
+const HEADERS = {
+    'Place': [ 'Place', 'Finishes' ],
+    'Tournament': [ 'Tournament', 'Finishes', 'Average', 'Wins' ],
+    'Partner': [ 'Partner', 'Finishes', 'Average', 'Wins' ]
+};
+
 function showStats() {
 
-    var content = $('#content');
+    var content = $('#content'),
+	resultIds = Object.keys(window.resultData),
+	numTournaments = resultIds.length,
+	avgFinish = Object.keys(resultData).reduce((a, b) => a + Number(resultData[b].place), 0) / numTournaments,
+	html = '';
+
+    html += '<div class="mainStat">Tournaments played: ' + numTournaments + '</div>';
+    html += '<div class="mainStat">Average finish: ' + avgFinish.toFixed(2) + '</div>';
+    content.append(html);
+
+    [ 'Place', 'Tournament', 'Partner' ].forEach(function(which) {
+	    let lcWhich = which.toLowerCase();
+	    html = '<div class="header">' + which + '</div>';
+	    html += '<table id="' + lcWhich + 'Table" class="stats"><tr>';
+	    HEADERS[which].forEach(column => html += getResultHeader(column, lcWhich));
+	    html += '</tr></table>';
+	    content.append(html);
+	    $('#' + lcWhich + 'Table th span').click(sortStats);
+	    displayStatTable(lcWhich);
+	});
+}
+
+function sortStats() {
+
+    var id = $(this).closest('th').prop('id'),
+	parts = id.split('_'),
+	which = parts && parts[0],
+        column = parts && parts[1];
+
+    if (!which || !column) {
+        return;
+    }
+
+    displayStatTable(which, column);
+}
+
+function displayStatTable(which, column) {
+
+    column = column || which;
 
     var resultIds = Object.keys(window.resultData),
-	places = {},
-	total = 0;
+	table = $('#' + which + 'Table').get(0),
+	sorted;
 
-    resultIds.forEach(function(resultId) {
-	    let result = window.resultData[resultId];
-	    places[result.place] = places[result.place] ? places[result.place] + 1 : 1;
-	    total = total + Number(result.place);
-	});
-    
-    var html = '<table class="stats"><tr><th class="ddcHeader">Place</th><th class="ddcHeader">Finishes</th></tr>',
-	sorted = Object.keys(places).sort((a, b) => a - b);
+    // current sort header is underlined
+    $('#' + which + 'Table span.current').removeClass('current');
+    $('#' + which + '_' + column + ' span').addClass('current');
 
-    sorted.forEach(place => html += '<tr><td class="ddcCell">' + place + '</td><td class="ddcCell">' + places[place] + '</td></tr>');
-    html += '</table>';
+    if (which === 'place') {
+	var places = {};
+	resultIds.forEach(function(resultId) {
+		let result = window.resultData[resultId];
+		places[result.place] = places[result.place] ? places[result.place] + 1 : 1;
+	    });
+	
+	if (column === 'place') {
+	    sorted = Object.keys(places).sort((a, b) => a - b);
+	}
+	else if (column === 'finishes') {
+	    sorted = Object.keys(places).sort((a, b) => places[b] - places[a]);
+	}
 
-    var numTournaments = resultIds.length,
-	avgFinish = Number(total / numTournaments).toFixed(2);
+	sorted.forEach(function(place, index) {
+		var row = table.rows[index + 1] || table.insertRow();
+		$(row).html('<td class="ddcCell">' + place + '</td><td class="ddcCell">' + places[place] + '</td>');
+	    });
+    }
+    else if (which === 'tournament') {
+	var tournaments = {},
+	    tournamentWins = {},
+	    tournamentTotal = {};
+		
+	resultIds.forEach(function(resultId) {
+		let result = window.resultData[resultId],
+		    name = window.tournamentData[result.tournament_id].name,
+		    place = Number(result.place);
+		
+		tournaments[name] = tournaments[name] ? tournaments[name] + 1 : 1;
+		if (result.place == 1) {
+		    tournamentWins[name] = tournamentWins[name] ? tournamentWins[name] + 1 : 1;
+		}
+		tournamentTotal[name] = tournamentTotal[name] ? tournamentTotal[name] + place : place;
+	    });
 
-    content.append('<div class="mainStat">Tournaments played: ' + numTournaments + '<\div>');
-    content.append('<div class="mainStat">Average finish: ' + avgFinish + '<\div>');
+	if (column === 'tournament') {
+	    sorted = Object.keys(tournaments).sort();
+	}
+	else if (column === 'finishes') {
+	    sorted = Object.keys(tournaments).sort((a, b) => tournaments[b] - tournaments[a]);
+	}
+	else if (column === 'average') {
+	    sorted = Object.keys(tournaments).sort((a, b) => (tournamentTotal[a] / tournaments[a]) - (tournamentTotal[b] / tournaments[b]));
+	}
+	else if (column === 'wins') {
+	    sorted = Object.keys(tournaments).sort((a, b) => (tournamentWins[b] || 0) - (tournamentWins[a] || 0));
+	}
 
-    content.append('<div class="header">Place</div>');
-    content.append(html);
+	sorted.forEach(function(tournament, index) {
+		var row = table.rows[index + 1] || table.insertRow(),
+		    avgFinish = Number(tournamentTotal[tournament] / tournaments[tournament]).toFixed(2);
 
-    var tournaments = {},
-	tournamentWins = {},
-	tournamentTotal = {};
+		var html = '<td class="ddcCell"><a href="">' + tournament + '</a></td>';
+		html += '<td class="ddcCell">' + tournaments[tournament] + '</td>';
+		html += '<td class="ddcCell">' + avgFinish + '</td>';
+		html += '<td class="ddcCell">' + (tournamentWins[tournament] || '') + '</td>';
+		$(row).html(html);
+	    });
 
-    resultIds.forEach(function(resultId) {
-	    let result = window.resultData[resultId],
-		name = window.tournamentData[result.tournament_id].name,
-		place = Number(result.place);
+	$('#tournamentTable a').click(function(e) {
+		e.preventDefault();
+		showPage('results', $(this).text());
+	    });
+    }
+    else if (which === 'partner') {
+	var partners = {},
+	    partnerWins = {},
+	    partnerTotal = {},
+	    partnerId = {};
 
-	    tournaments[name] = tournaments[name] ? tournaments[name] + 1 : 1;
-	    if (result.place == 1) {
-		tournamentWins[name] = tournamentWins[name] ? tournamentWins[name] + 1 : 1;
-	    }
-	    tournamentTotal[name] = tournamentTotal[name] ? tournamentTotal[name] + place : place;
-	});
+	resultIds.forEach(function(resultId) {
+		let result = window.resultData[resultId],
+		    name = result.player1 == window.playerId ? result.name2 : result.name1,
+		    id = result.player1 == window.playerId ? result.player2 : result.player1,
+		    place = Number(result.place);
+		
+		name = name || '[solo]';
+		partnerId[name] = id;
+		partners[name] = partners[name] ? partners[name] + 1 : 1;
+		if (result.place == 1) {
+		    partnerWins[name] = partnerWins[name] ? partnerWins[name] + 1 : 1;
+		}
+		partnerTotal[name] = partnerTotal[name] ? partnerTotal[name] + place : place;
+	    });
 
-    var html = '<table class="stats"><tr><th class="ddcHeader">Tournament</th><th class="ddcHeader">Finishes</th><th class="ddcHeader">Average Finish</th><th class="ddcHeader">Wins</th></tr>',
-    sorted = Object.keys(tournaments).sort();
+	
+	if (column === 'partner') {
+	    sorted = Object.keys(partners).sort();
+	}
+	else if (column === 'finishes') {
+	    sorted = Object.keys(partners).sort((a, b) => partners[b] - partners[a]);
+	}
+	else if (column === 'average') {
+	    sorted = Object.keys(partners).sort((a, b) => (partnerTotal[a] / partners[a]) - (partnerTotal[b] / partners[b]));
+	}
+	else if (column === 'wins') {
+	    sorted = Object.keys(partners).sort((a, b) => (partnerWins[b] || 0) - (partnerWins[a] || 0));
+	}
 
-    sorted.forEach(function(tournament) {
-	    var avgFinish = Number(tournamentTotal[tournament] / tournaments[tournament]).toFixed(2);
-	    html += '<tr>';
-	    html += '<td class="ddcCell">' + tournament + '</td>';
-	    html += '<td class="ddcCell">' + tournaments[tournament] + '</td>';
-	    html += '<td class="ddcCell">' + avgFinish + '</td>';
-	    html += '<td class="ddcCell">' + (tournamentWins[tournament] || '') + '</td>';
-	    html += '</tr>';
-	});
-    html += '</table>';
+	sorted.forEach(function(partner, index) {
+		var row = table.rows[index + 1] || table.insertRow(),
+		    avgFinish = Number(partnerTotal[partner] / partners[partner]).toFixed(2);
 
-    content.append('<div class="header">Tournament</div>');
-    content.append(html);
-
-    var partners = {},
-	partnerWins = {},
-        partnerTotal = {},
-	partnerId = {};
-
-    resultIds.forEach(function(resultId) {
-	    let result = window.resultData[resultId],
-		name = result.player1 == window.playerId ? result.name2 : result.name1,
-		id = result.player1 == window.playerId ? result.player2 : result.player1,
-		place = Number(result.place);
-
-	    name = name || '[solo]';
-	    partnerId[name] = id;
-	    partners[name] = partners[name] ? partners[name] + 1 : 1;
-	    if (result.place == 1) {
-		partnerWins[name] = partnerWins[name] ? partnerWins[name] + 1 : 1;
-	    }
-	    partnerTotal[name] = partnerTotal[name] ? partnerTotal[name] + place : place;
-	});
-
-    var html = '<table class="stats"><tr><th class="ddcHeader">Partner</th><th class="ddcHeader">Finishes</th><th class="ddcHeader">Average Finish</th><th class="ddcHeader">Wins</th></tr>',
-    sorted = Object.keys(partners).sort(compareNames);
-
-    sorted.forEach(function(partner) {
-	    var avgFinish = Number(partnerTotal[partner] / partners[partner]).toFixed(2);
-	    html += '<tr>';
-	    html += '<td class="ddcCell"><a href="player.html?id=' + partnerId[partner] + '">' + partner + '</a></td>';
-	    html += '<td class="ddcCell">' + partners[partner] + '</td>';
-	    html += '<td class="ddcCell">' + avgFinish + '</td>';
-	    html += '<td class="ddcCell">' + (partnerWins[partner] || '') + '</td>';
-	    html += '</tr>';
-	});
-    html += '</table>';
-
-    content.append('<div class="header">Partner</div>');
-    content.append(html);
+		var html = '<td class="ddcCell"><a href="player.html?id=' + partnerId[partner] + '">' + partner + '</a></td>';
+		html += '<td class="ddcCell">' + partners[partner] + '</td>';
+		html += '<td class="ddcCell">' + avgFinish + '</td>';
+		html += '<td class="ddcCell">' + (partnerWins[partner] || '') + '</td>';
+		$(row).html(html);
+	    });
+    }
 }

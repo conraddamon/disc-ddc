@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 18, 2018 at 08:07 PM
+-- Generation Time: Jan 28, 2018 at 11:00 PM
 -- Server version: 5.6.23-cll-lve
 -- PHP Version: 5.6.30
 
@@ -31,7 +31,8 @@ SET time_zone = "+00:00";
 CREATE TABLE `player` (
   `id` int(11) NOT NULL,
   `name` varchar(40) NOT NULL,
-  `sex` enum('male','female') NOT NULL DEFAULT 'male'
+  `sex` enum('male','female') NOT NULL DEFAULT 'male',
+  `dead` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -44,8 +45,9 @@ CREATE TABLE `ranking` (
   `id` int(11) NOT NULL,
   `player_id` int(11) NOT NULL,
   `division` enum('O','OM','OGM','OSGM','OL','W','WM','WGM','WSGM','WL','OJ','WJ','MX') NOT NULL DEFAULT 'O',
-  `date` date NOT NULL,
-  `points` decimal(10,2) NOT NULL
+  `year` year(4) NOT NULL,
+  `points` decimal(10,2) NOT NULL,
+  `rank` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -124,22 +126,22 @@ ALTER TABLE `tournament`
 -- AUTO_INCREMENT for table `player`
 --
 ALTER TABLE `player`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1626;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1642;
 --
 -- AUTO_INCREMENT for table `ranking`
 --
 ALTER TABLE `ranking`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36481;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38446;
 --
 -- AUTO_INCREMENT for table `result`
 --
 ALTER TABLE `result`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4564;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4577;
 --
 -- AUTO_INCREMENT for table `tournament`
 --
 ALTER TABLE `tournament`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=379;COMMIT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=380;COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

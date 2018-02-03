@@ -13,21 +13,8 @@ require_once('util.php');
 require_once('ddc.php');
 
 $pageTitle = "Double Disc Court: Rankings";
-
-$options = array();
-$sql = "SELECT DISTINCT(date) FROM ranking ORDER BY date DESC";
-$result = db_query($sql);
-foreach ($result as $idx => $row) {
-  $date = $row['date'];
-  if ($idx == 0) {
-    array_push($options, "<option value=0>Current</option>");
-  }
-  else {
-    $year = substr($date, 0, 4);
-    array_push($options, "<option value=$year>$year</option>");
-  }
-}
-$yearOptions = implode('', $options);
+$note = '';
+#$note = "<div class='subtitle' style='color:red;'>Rankings are under construction. Back soon.</div>";
 
 echo <<< EOF
 <!doctype html>
@@ -42,6 +29,7 @@ echo <<< EOF
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/ddc/rankings.js"></script>
+<script src="/js/ddc/generate_rankings.js"></script>
 <script>
 function launch() {
   initializeRankings();
@@ -51,12 +39,18 @@ function launch() {
 </head>
 <body onload="launch();">
   <div class="title">$pageTitle</div>
+  $note
   <div class="pageLinks">
     [ <span class="pageLink" id="top25">Top 25</span> ]
     [ <span class="pageLink" id="top50">Top 50</span> ]
     [ <span class="pageLink" id="top100">Top 100</span> ]
     [ <span class="pageLink" id="all">All</span> ]
-    <label id="yearLabel" for="yearSelect">Year: </label><select id="yearSelect">$yearOptions</select>
+    <label id="yearLabel" for="yearSelect">Year: </label><select id="yearSelect"></select>
+    [ <span class="pageLink" id="results">Results</span> ]
+    [ <span class="pageLink" id="export">Export</span> ]
+    [ <span class="pageLink" id="explain">Explain</span> ]
+    [ <span class="pageLink" id="experiment">Experiment</span> ]
+    <input id="sweden" type="checkbox" /><label id="swedenLabel" for="sweden">Sweden</label>
   </div>
   <div id="content"></div>
 </body>
