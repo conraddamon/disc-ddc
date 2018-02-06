@@ -52,8 +52,9 @@ function showPage(page) {
 
     let qs = parseQueryString(),
 	year = qs.year,
-	sweden = !!qs.sweden,
-	doExport = !!qs.export;
+	sweden = !!qs.sweden;
+
+    let doExport = (page === 'export' );
 
     if (year) {
 	$('#yearSelect').val(year);
@@ -78,8 +79,13 @@ function showPage(page) {
     if (sweden) {
 	options.sweden = true;
     }
+
+    let top = window.top;
     if (page && page.indexOf('top') === 0) {
-	options.limit = page.substr(3);
+	top = page.substr(3);
+    }
+    if (top) {
+	options.limit = window.top = top;
     }
 
     let title = "Double Disc Court: Rankings" + (year ? " for " + year : "");
