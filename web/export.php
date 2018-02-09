@@ -34,10 +34,11 @@ $results = db_query($sql);
 $output = fopen('php://output', 'w');
 
 // output the column headings
-fputcsv($output, array('Year', 'Division', 'Name', 'Rank', 'Points'));
+fputcsv($output, array('Name', 'Division', 'Points', 'Rank'));
 
 // write query results to output
 foreach ($results as $result) {
-  fputcsv($output, $result);
+  $data = array($player[$result['player_id']], $result['division'], $result['points'], $result['rank']);
+  fputcsv($output, $data);
 }
 ?>
