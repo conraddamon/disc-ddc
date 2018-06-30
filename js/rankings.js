@@ -80,12 +80,12 @@ function showPage(page) {
 	options.sweden = true;
     }
 
-    let top = window.top;
+    let limit = window.rankingsLimit;
     if (page && page.indexOf('top') === 0) {
-	top = page.substr(3);
+	limit = page.substr(3);
     }
-    if (top) {
-	options.limit = window.top = top;
+    if (limit && page !== 'all') {
+	options.limit = window.rankingsLimit = limit;
     }
 
     let title = "Double Disc Court: Rankings" + (year ? " for " + year : "");
