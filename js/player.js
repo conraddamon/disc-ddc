@@ -10,7 +10,6 @@ function initializePlayer(playerId) {
     var requests = [ getResults, getTournaments ],
 	callbacks = [ gotResults, gotTournaments ];
 
-    //    sendRequests(requests, callbacks).then(showPage.bind(null, 'results'));
     sendRequests(requests, callbacks).then(() => showPage('results'));
 }
 

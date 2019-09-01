@@ -10,7 +10,8 @@ function initializeRankings() {
 	});
 
     populateYears();
-    showPage(DEFAULT_PAGE);
+    let page = parseQueryString().page;
+    showPage(page || DEFAULT_PAGE);
 }
 
 function refresh() {
@@ -157,25 +158,48 @@ function showRankings(rankings, names) {
 
 function exportRankings(rankings, names, year) {
 
-    let divs = Object.keys(rankings),
-	csv = '';
+    const latest = {};
+    const updateLatest = (data) => {
+	data.forEach(record => {
+		const year = Number(record.latest.split('-')[0]);
+		const player = record.player;
+		latest[player] = Math.max(latest[player] || 0, year);
+	    });
+    };
 
-    csv += 'Year,Division,Name,Rank,Points\n';
-    divs.forEach(function(div) {
-            let players = Object.keys(rankings[div]);
-            players.sort((a, b) => rankings[div][a].rank - rankings[div][b].rank);
-            players.forEach(function(p) {
-                    let score = rankings[div][p].points;
-		    let row = [ year, div, names[p], rankings[div][p].rank, score ].join(',');
-		    csv += row + '\n';
-		});
-	});
+    const num = {};
+    const updateNum = (data) => {
+	data.forEach(record => num[record.player] = ((num[record.player] || 0) + Number(record.num)));
+    }
 
-    csv = 'data:text/csv;charset=utf-8,' + csv;
-    data = encodeURI(csv);
+    const doExport = () => {
+	let divs = Object.keys(rankings);
+	let csv = '';
 
-    link = document.createElement('a');
-    link.setAttribute('href', data);
-    link.setAttribute('download', 'ddc-rankings.csv');
-    link.click();
+	csv += 'Year,Division,Name,Rank,Points,Latest,Num,ID\n';
+	divs.forEach(function(div) {
+		let players = Object.keys(rankings[div]);
+		players.sort((a, b) => rankings[div][a].rank - rankings[div][b].rank);
+		players.forEach(function(p) {
+			let score = rankings[div][p].points;
+			let row = [ year, div, names[p], rankings[div][p].rank, score, latest[p], num[p], p ].join(',');
+			csv += row + '\n';
+		    });
+	    });
+	
+	csv = 'data:text/csv;charset=utf-8,' + csv;
+	data = encodeURI(csv);
+	
+	link = document.createElement('a');
+	link.setAttribute('href', data);
+	link.setAttribute('download', 'ddc-rankings.csv');
+	document.getElementById('content').appendChild(link);
+	link.click();
+    };
+
+    const req1 = sendRequest('get-latest-year-played', { which: 'player1' });
+    const req2 = sendRequest('get-latest-year-played', { which: 'player2' });
+    const req3 = sendRequest('get-num-results', { which: 'player1' });
+    const req4 = sendRequest('get-num-results', { which: 'player2' });
+    sendRequests([ req1, req2, req3, req4 ], [ updateLatest, updateLatest, updateNum, updateNum ]).then(() => doExport());
 }

@@ -232,6 +232,7 @@ function submitResults(e) {
 
     sendRequest('add-tournament', params).then(function(id) {
 	    var requests = [];
+	    id = id.replace(/['"]/g, '');
 	    $('#resultData').children().each(function(idx, el) {
 		    params = {
 			tournamentId: id,

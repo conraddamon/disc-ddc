@@ -38,6 +38,9 @@ elseif ($op == 'load-tournament') {
   $sort = get_input('sortBy', 'get');
   $before = get_input('before', 'get');
   $after = get_input('after', 'get');
+  $beforeSql = '';
+  $afterSql = '';
+  $dateSql = '';
   if ($before || $after) {
     if ($before) {
       $beforeSql = "tournament.end <= '$before'";
@@ -73,7 +76,7 @@ elseif ($op == 'get-player') {
 
 # adds a name to the list of DDC players
 elseif ($op == 'add-player') {
-  $name = db_quote(get_input('name', 'get'));
+  $name = db_quote(db_encode(get_input('name', 'get')));
   $sex = get_input('sex', 'get');
   $sql = "INSERT INTO player(name,sex) VALUES($name,'$sex')";
   $result = db_query($sql);
@@ -127,7 +130,6 @@ elseif ($op == 'add-result') {
 }
 
 elseif ($op == 'get-rankings') {
-
   $limit = get_input('limit', 'get');
   $year = get_input('year', 'get');
   $player = get_input('player', 'get');
@@ -158,5 +160,17 @@ elseif ($op == 'get-rankings') {
   $result = db_query($sql);
 }
 
-echo json_encode(as_utf8($result));
+elseif ($op == 'get-latest-year-played') {
+  $which = get_input('which', 'get');
+  $sql = "SELECT MAX(t.start) AS latest, r.$which AS player FROM tournament t JOIN result r ON t.id=r.tournament_id WHERE $which > 0 GROUP BY r.$which";
+  $result = db_query($sql);
+}
+
+elseif ($op == 'get-num-results') {
+  $which = get_input('which', 'get');
+  $sql = "SELECT $which AS player, COUNT(*) AS num FROM result WHERE $which > 0 GROUP BY $which";
+  $result = db_query($sql);
+}
+
+echo json_encode(db_encode($result));
 ?>
